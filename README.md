@@ -1,2 +1,3 @@
-# vendr-payment-provider-template
-Template Payment Provider for Vendr, the eCommerce solution for Umbraco v8+
+# Vendr Template Payment Provider
+
+Template Payment Provider for Vendr, the eCommerce package for Umbrao v8+
