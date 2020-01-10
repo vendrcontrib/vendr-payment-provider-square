@@ -11,7 +11,7 @@ IF NOT "%ARG1%" == "" SET BUILD_CONFIG=%ARG1:~-1%
 IF "%ARG1%" == "" SET /P BUILD_CONFIG=Please select the build configuration to use (r = Release, d = Debug [Default]):
 
 IF NOT "%ARG2%" == "" SET BUILD_TARGET=%ARG2:~-1%
-IF "%ARG2%" == "" SET /P BUILD_TARGET=Please select the build target to use (b = prepare only [Default], u = prepare and package umbraco, n = prepare and package nuget, a = prepare and package all):
+IF "%ARG2%" == "" SET /P BUILD_TARGET=Please select the build target to use (b = prepare only [Default], n = prepare and package nuget):
 IF "%BUILD_TARGET%" == "" SET BUILD_TARGET=b
 
 REM Covert build config flag to an actual config string
@@ -22,18 +22,10 @@ if "%BUILD_CONFIG%" == "r" (
 )
 
 REM Covert build target flag to an actual config string
-if "%BUILD_TARGET%" == "a" (
-  SET BUILD_TARGET=PrepareAndPackageAll
+if "%BUILD_TARGET%" == "n" (
+  SET BUILD_TARGET=PrepareAndPackageNuget
 ) else (
-  if "%BUILD_TARGET%" == "n" (
-    SET BUILD_TARGET=PrepareAndPackageNuget
-  ) else (
-    if "%BUILD_TARGET%" == "u" (
-      SET BUILD_TARGET=PrepareAndPackageUmbraco
-    ) else (
-      SET BUILD_TARGET=PrepareOnly
-    )
-  )
+  SET BUILD_TARGET=PrepareOnly
 )
 
 REM Trigger the build
