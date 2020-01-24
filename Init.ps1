@@ -45,7 +45,7 @@ Write-Host "Replacing file contents" -ForegroundColor Gray
 Write-Host "=============================================" -ForegroundColor Gray
 Write-Host ""
 
-Get-ChildItem -Recurse -File | Where-Object { ($_.Name -match "\.sln|\.proj|\.cs|\.md|\.nuspec") -and ($_.Name -notmatch "_tools") } | ForEach-Object { 
+Get-ChildItem -Recurse -File | Where-Object { ($_.Name -match "\.sln|\.proj|\.cs|\.md|\.nuspec|\.xml") -and ($_.Name -notmatch "_tools") } | ForEach-Object { 
     Write-Host $_.FullName  -ForegroundColor DarkGray
     (Get-Content $_.FullName | ForEach-Object { 
         $_.Replace("Template", $ProviderName).Replace("template", $ProviderName.ToLower())
