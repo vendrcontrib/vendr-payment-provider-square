@@ -17,9 +17,12 @@ namespace Vendr.Contrib.PaymentProviders
 
         public override bool FinalizeAtContinueUrl => true;
 
-        public override PaymentForm GenerateForm(OrderReadOnly order, string continueUrl, string cancelUrl, string callbackUrl, TemplateSettings settings)
+        public override PaymentFormResult GenerateForm(OrderReadOnly order, string continueUrl, string cancelUrl, string callbackUrl, TemplateSettings settings)
         {
-            return new PaymentForm(continueUrl, FormMethod.Post);
+            return new PaymentFormResult()
+            {
+                Form = new PaymentForm(continueUrl, FormMethod.Post)
+            };
         }
 
         public override string GetCancelUrl(OrderReadOnly order, TemplateSettings settings)
@@ -40,9 +43,9 @@ namespace Vendr.Contrib.PaymentProviders
             return settings.ContinueUrl;
         }
 
-        public override CallbackResponse ProcessCallback(OrderReadOnly order, HttpRequestBase request, TemplateSettings settings)
+        public override CallbackResult ProcessCallback(OrderReadOnly order, HttpRequestBase request, TemplateSettings settings)
         {
-            return new CallbackResponse
+            return new CallbackResult
             {
                 TransactionInfo = new TransactionInfo
                 {
