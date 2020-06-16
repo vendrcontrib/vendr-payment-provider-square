@@ -18,6 +18,8 @@
         <PaymentProviderName>Template</PaymentProviderName>
         <ProjectName>Vendr.Contrib.PaymentProviders.$(PaymentProviderName)</ProjectName>
         <MinUmbracoVersion>8.2.0</MinUmbracoVersion>
+
+        <GitVersionConfig>$(BuildToolsDir)\GitVersion\GitVersion.yml</GitVersionConfig>
 	</PropertyGroup>
 
     <ItemGroup>
