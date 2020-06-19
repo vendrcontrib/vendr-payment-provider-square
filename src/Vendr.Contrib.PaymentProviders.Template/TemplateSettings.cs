@@ -1,6 +1,6 @@
 ﻿using Vendr.Core.Web.PaymentProviders;
 
-namespace Vendr.Contrib.PaymentProviders
+namespace Vendr.Contrib.PaymentProviders.Template
 {
     public class TemplateSettings
     {

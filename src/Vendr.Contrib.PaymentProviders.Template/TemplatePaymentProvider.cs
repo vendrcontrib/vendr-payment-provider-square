@@ -6,7 +6,7 @@ using Vendr.Core.Models;
 using Vendr.Core.Web.Api;
 using Vendr.Core.Web.PaymentProviders;
 
-namespace Vendr.Contrib.PaymentProviders
+namespace Vendr.Contrib.PaymentProviders.Template
 {
     [PaymentProvider("template", "Template", "Template payment provider", Icon = "icon-invoice")]
     public class TemplatePaymentProvider : PaymentProviderBase<TemplateSettings>
