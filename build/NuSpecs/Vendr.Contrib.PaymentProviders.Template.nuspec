@@ -23,7 +23,7 @@
     </metadata>
     <files>
         <!-- nuget files -->
-        <file src="$SrcDir$\assets\logo-64.png" target="images\icon.png" />
+        <file src="$SrcDir$\assets\logo-128.png" target="images\icon.png" />
         
         <!-- libs -->
         <file src="$SrcDir$\bin\Vendr.Contrib.PaymentProviders.Template.dll" target="lib\net472\Vendr.Contrib.PaymentProviders.Template.dll" />
