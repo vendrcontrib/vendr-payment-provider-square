@@ -1,17 +1,17 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata minClientVersion="4.1.0">
-        <id>Vendr.Contrib.PaymentProviders.Template</id>
+        <id>Vendr.Contrib.PaymentProviders.Square</id>
         <version>0.0.0</version>
-        <title>Vendr.Contrib.PaymentProviders.Template</title>
+        <title>Vendr.Contrib.PaymentProviders.Square</title>
         <authors>Outfield Digital Ltd</authors>
         <owners>Outfield Digital Ltd</owners>
         <copyright>Outfield Digital Ltd</copyright>
         <icon>images\icon.png</icon>
         <license type="expression">MIT</license>
         <projectUrl>https://getvendr.net/</projectUrl>
-        <description>Template payment provider for Vendr, the eCommerce package for Umbrao v8+</description>
-        <summary>Template payment provider for Vendr, the eCommerce package for Umbrao v8+</summary>
+        <description>Square payment provider for Vendr, the eCommerce package for Umbrao v8+</description>
+        <summary>Square payment provider for Vendr, the eCommerce package for Umbrao v8+</summary>
         <language>en-US</language>
         <tags>umbraco ecommerce vendr</tags>
         <dependencies>
@@ -26,9 +26,9 @@
         <file src="$SrcDir$\assets\logo-128.png" target="images\icon.png" />
         
         <!-- libs -->
-        <file src="$SrcDir$\bin\Vendr.Contrib.PaymentProviders.Template.dll" target="lib\net472\Vendr.Contrib.PaymentProviders.Template.dll" />
+        <file src="$SrcDir$\bin\Vendr.Contrib.PaymentProviders.Square.dll" target="lib\net472\Vendr.Contrib.PaymentProviders.Square.dll" />
 
         <!-- symbols -->
-        <file src="$SrcDir$\bin\Vendr.Contrib.PaymentProviders.Template.pdb" target="lib\net472\Vendr.Contrib.PaymentProviders.Template.pdb" />
+        <file src="$SrcDir$\bin\Vendr.Contrib.PaymentProviders.Square.pdb" target="lib\net472\Vendr.Contrib.PaymentProviders.Square.pdb" />
     </files>
 </package>

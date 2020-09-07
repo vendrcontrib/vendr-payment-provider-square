@@ -1,3 +1,3 @@
-# Vendr Template Payment Provider
+# Vendr Square Payment Provider
 
-Template Payment Provider for Vendr, the eCommerce package for Umbrao v8+
+Square Payment Provider for Vendr, the eCommerce package for Umbrao v8+

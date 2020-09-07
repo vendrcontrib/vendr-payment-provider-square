@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="PrepareOnly" ToolsVersion="14.0">
     
 	<!-- PROPERTIES -->
@@ -15,7 +15,7 @@
         <ArtifactFilesDir>$(ArtifactsDir)\files</ArtifactFilesDir>
         <ArtifactPackagesDir>$(ArtifactsDir)\packages</ArtifactPackagesDir>
         
-        <PaymentProviderName>Template</PaymentProviderName>
+        <PaymentProviderName>Square</PaymentProviderName>
         <ProjectName>Vendr.Contrib.PaymentProviders.$(PaymentProviderName)</ProjectName>
         <MinUmbracoVersion>8.2.0</MinUmbracoVersion>
 
