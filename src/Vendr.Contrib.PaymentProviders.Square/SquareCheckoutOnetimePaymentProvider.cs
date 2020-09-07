@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using Square.Apis;
@@ -29,7 +30,7 @@ namespace Vendr.Contrib.PaymentProviders.Square
             var accessToken = settings.SandboxMode ? settings.SandboxAccessToken : settings.LiveAccessToken;
             var environment = settings.SandboxMode ? SquareSdk.Environment.Sandbox : SquareSdk.Environment.Production;
 
-            SquareSdk.SquareClient client = new SquareSdk.SquareClient.Builder()
+            var client = new SquareSdk.SquareClient.Builder()
                 .Environment(environment)
                 .AccessToken(accessToken)
                 .Build();
@@ -45,9 +46,9 @@ namespace Vendr.Contrib.PaymentProviders.Square
 
             var bodyOrderOrderLineItems = new List<OrderLineItem>()
             {
-                new OrderLineItem("1", 
-                    order.Id.ToString(), 
-                    $"Order #{order.OrderNumber}", 
+                new OrderLineItem("1",
+                    order.Id.ToString(),
+                    order.OrderNumber,
                     basePriceMoney: new Money(totalPrice, currencyCode))
             };
 
@@ -62,17 +63,17 @@ namespace Vendr.Contrib.PaymentProviders.Square
                 .LocationId(settings.LocationId)
                 .IdempotencyKey(Guid.NewGuid().ToString())
                 .Build();
-            
+
             var body = new CreateCheckoutRequest.Builder(
                 Guid.NewGuid().ToString(), bodyOrder)
-                .RedirectUrl("https://meganthomaslashes.co.uk/checkout/order-confirmation/")
+                .RedirectUrl(continueUrl)
                 .Build();
 
-            CreateCheckoutResponse result = checkoutApi.CreateCheckout(settings.LocationId, body);
+            var result = checkoutApi.CreateCheckout(settings.LocationId, body);
 
             return new PaymentFormResult()
             {
-                Form = new PaymentForm(result.Checkout.CheckoutPageUrl, FormMethod.Post)
+                Form = new PaymentForm(result.Checkout.CheckoutPageUrl, FormMethod.Get)
             };
         }
 
@@ -96,6 +97,45 @@ namespace Vendr.Contrib.PaymentProviders.Square
 
         public override CallbackResult ProcessCallback(OrderReadOnly order, HttpRequestBase request, SquareSettings settings)
         {
+            var accessToken = settings.SandboxMode ? settings.SandboxAccessToken : settings.LiveAccessToken;
+            var environment = settings.SandboxMode ? SquareSdk.Environment.Sandbox : SquareSdk.Environment.Production;
+
+            var client = new SquareSdk.SquareClient.Builder()
+                .Environment(environment)
+                .AccessToken(accessToken)
+                .Build();
+
+            var orderApi = client.OrdersApi;
+
+            var transactionId = request.QueryString["transactionId"];
+
+            var paymentStatus = PaymentStatus.PendingExternalSystem;
+            SquareSdk.Models.Order squareOrder = null;
+
+            if (!string.IsNullOrWhiteSpace(transactionId))
+            {
+                var result = orderApi.BatchRetrieveOrders(
+                    new BatchRetrieveOrdersRequest(new List<string>() { transactionId }));
+
+                squareOrder = result.Orders.FirstOrDefault();
+            }
+
+            if (squareOrder != null)
+            {
+                var orderStatus = squareOrder.State ?? "";
+
+                switch (orderStatus.ToUpper())
+                {
+                    case "COMPLETED":
+                    case "AUTHORIZED":
+                        paymentStatus = PaymentStatus.Authorized;
+                        break;
+                    case "CANCELED":
+                        paymentStatus = PaymentStatus.Cancelled;
+                        break;
+                }
+            }
+
             return new CallbackResult
             {
                 TransactionInfo = new TransactionInfo
@@ -103,7 +143,7 @@ namespace Vendr.Contrib.PaymentProviders.Square
                     AmountAuthorized = order.TotalPrice.Value.WithTax,
                     TransactionFee = 0m,
                     TransactionId = Guid.NewGuid().ToString("N"),
-                    PaymentStatus = PaymentStatus.Authorized
+                    PaymentStatus = paymentStatus
                 }
             };
         }
