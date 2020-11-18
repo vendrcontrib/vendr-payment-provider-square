@@ -1,26 +1,78 @@
+using Newtonsoft.Json.Linq;
+using Square.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
-using Square.Apis;
-using Square.Models;
-using SquareSdk = Square;
 using Vendr.Core;
 using Vendr.Core.Models;
 using Vendr.Core.Web.Api;
 using Vendr.Core.Web.PaymentProviders;
+using SquareSdk = Square;
 
 namespace Vendr.Contrib.PaymentProviders.Square
 {
-    [PaymentProvider("square", "Square", "Square payment provider", Icon = "icon-invoice")]
+    [PaymentProvider("square-checkout-onetime", "Square Checkout (One Time)", "Square payment provider for one time payments", Icon = "icon-invoice")]
     public class SquareCheckoutOnetimePaymentProvider : PaymentProviderBase<SquareSettings>
     {
         public SquareCheckoutOnetimePaymentProvider(VendrContext vendr)
             : base(vendr)
         { }
 
-        public override bool FinalizeAtContinueUrl => true;
+        public override OrderReference GetOrderReference(HttpRequestBase request, SquareSettings settings)
+        {
+            var accessToken = settings.SandboxMode ? settings.SandboxAccessToken : settings.LiveAccessToken;
+            var environment = settings.SandboxMode ? SquareSdk.Environment.Sandbox : SquareSdk.Environment.Production;
+
+            var client = new SquareSdk.SquareClient.Builder()
+                .Environment(environment)
+                .AccessToken(accessToken)
+                .Build();
+
+            var orderApi = client.OrdersApi;
+            SquareSdk.Models.Order squareOrder = null;
+
+            try
+            {
+                var orderId = "";
+                var referenceId = "";
+                if (request.InputStream.CanSeek)
+                    request.InputStream.Seek(0, SeekOrigin.Begin);
+
+                using (var reader = new StreamReader(request.InputStream))
+                {
+                    var json = reader.ReadToEnd();
+
+                    var jsonObject = JObject.Parse(json);
+
+                    orderId = jsonObject["data"]["object"]["payment"]["order_id"].ToString();
+                }
+
+                if (!string.IsNullOrWhiteSpace(orderId))
+                {
+                    var result = orderApi.BatchRetrieveOrders(
+                        new BatchRetrieveOrdersRequest(new List<string>() { orderId }));
+
+                    squareOrder = result.Orders.FirstOrDefault();
+                    referenceId = squareOrder.ReferenceId;
+
+                    if(!string.IsNullOrWhiteSpace(referenceId))
+                    {
+                        return OrderReference.Parse(referenceId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Vendr.Log.Error<SquareCheckoutOnetimePaymentProvider>(ex, "Square - GetOrderReference");
+            }
+
+            return base.GetOrderReference(request, settings);
+        }
+
+        public override bool FinalizeAtContinueUrl => false;
 
         public override PaymentFormResult GenerateForm(OrderReadOnly order, string continueUrl, string cancelUrl, string callbackUrl, SquareSettings settings)
         {
@@ -54,6 +106,7 @@ namespace Vendr.Contrib.PaymentProviders.Square
 
             var bodyOrderOrder = new SquareSdk.Models.Order.Builder(settings.LocationId)
                 .CustomerId(order.CustomerInfo.CustomerReference)
+                .ReferenceId(order.Id.ToString())
                 .Source(bodyOrderOrderSource)
                 .LineItems(bodyOrderOrderLineItems)
                 .Build();
