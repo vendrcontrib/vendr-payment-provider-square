@@ -8,6 +8,7 @@ using System.Web;
 using System.Web.Mvc;
 using Vendr.Core;
 using Vendr.Core.Models;
+using Vendr.Core.Web;
 using Vendr.Core.Web.Api;
 using Vendr.Core.Web.PaymentProviders;
 using SquareSdk = Square;
@@ -34,42 +35,70 @@ namespace Vendr.Contrib.PaymentProviders.Square
             var orderApi = client.OrdersApi;
             SquareSdk.Models.Order squareOrder = null;
 
-            try
+            var isValidRequest = ValidateSquareSignature(request, settings);
+
+            if(isValidRequest)
             {
-                var orderId = "";
-                var referenceId = "";
-                if (request.InputStream.CanSeek)
-                    request.InputStream.Seek(0, SeekOrigin.Begin);
-
-                using (var reader = new StreamReader(request.InputStream))
+                try
                 {
-                    var json = reader.ReadToEnd();
+                    var orderId = "";
+                    var referenceId = "";
+                    if (request.InputStream.CanSeek)
+                        request.InputStream.Seek(0, SeekOrigin.Begin);
 
-                    var jsonObject = JObject.Parse(json);
+                    orderId = GetOrderIdFromRequest(request);
 
-                    orderId = jsonObject["data"]["object"]["payment"]["order_id"].ToString();
-                }
-
-                if (!string.IsNullOrWhiteSpace(orderId))
-                {
-                    var result = orderApi.BatchRetrieveOrders(
-                        new BatchRetrieveOrdersRequest(new List<string>() { orderId }));
-
-                    squareOrder = result.Orders.FirstOrDefault();
-                    referenceId = squareOrder.ReferenceId;
-
-                    if(!string.IsNullOrWhiteSpace(referenceId))
+                    if (!string.IsNullOrWhiteSpace(orderId))
                     {
-                        return OrderReference.Parse(referenceId);
+                        var result = orderApi.BatchRetrieveOrders(
+                            new BatchRetrieveOrdersRequest(new List<string>() { orderId }));
+
+                        squareOrder = result.Orders.FirstOrDefault();
+                        referenceId = squareOrder.ReferenceId;
+
+                        if (!string.IsNullOrWhiteSpace(referenceId) && Guid.TryParse(referenceId, out var vendrOrderId))
+                        {
+                            OrderReadOnly vendrOrder = Vendr.Services.OrderService.GetOrder(vendrOrderId);
+                            return vendrOrder.GenerateOrderReference();
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Vendr.Log.Error<SquareCheckoutOnetimePaymentProvider>(ex, "Square - GetOrderReference");
+                catch (Exception ex)
+                {
+                    Vendr.Log.Error<SquareCheckoutOnetimePaymentProvider>(ex, "Square - GetOrderReference");
+                }
             }
 
             return base.GetOrderReference(request, settings);
+        }
+
+        private static bool ValidateSquareSignature(HttpRequestBase request, SquareSettings settings)
+        {
+            var signingSecret = settings.SandboxMode ? settings.SandboxWebhookSigningSecret: settings.LiveWebhookSigningSecret;
+
+            var requestSquareSignatureSecret = request.Headers["x-square-signature"];
+
+            return !string.IsNullOrWhiteSpace(requestSquareSignatureSecret) && requestSquareSignatureSecret == signingSecret;
+        }
+
+        private static string GetOrderIdFromRequest(HttpRequestBase request)
+        {
+            string orderId;
+            using (var reader = new StreamReader(request.InputStream))
+            {
+                var json = reader.ReadToEnd();
+
+                if(string.IsNullOrWhiteSpace(json))
+                {
+                    return null;
+                }
+
+                var jsonObject = JObject.Parse(json);
+
+                orderId = jsonObject["data"]["object"]["payment"]["order_id"].ToString();
+            }
+
+            return orderId;
         }
 
         public override bool FinalizeAtContinueUrl => false;
@@ -103,6 +132,9 @@ namespace Vendr.Contrib.PaymentProviders.Square
                     order.OrderNumber,
                     basePriceMoney: new Money(totalPrice, currencyCode))
             };
+
+            var orderReference = order.GenerateOrderReference();
+            var shortOrderReference = $"{order.Id},{order.OrderNumber}";
 
             var bodyOrderOrder = new SquareSdk.Models.Order.Builder(settings.LocationId)
                 .CustomerId(order.CustomerInfo.CustomerReference)
@@ -153,52 +185,66 @@ namespace Vendr.Contrib.PaymentProviders.Square
             var accessToken = settings.SandboxMode ? settings.SandboxAccessToken : settings.LiveAccessToken;
             var environment = settings.SandboxMode ? SquareSdk.Environment.Sandbox : SquareSdk.Environment.Production;
 
-            var client = new SquareSdk.SquareClient.Builder()
-                .Environment(environment)
-                .AccessToken(accessToken)
-                .Build();
+            var isValidRequest = ValidateSquareSignature(request, settings);
 
-            var orderApi = client.OrdersApi;
-
-            var transactionId = request.QueryString["transactionId"];
-
-            var paymentStatus = PaymentStatus.PendingExternalSystem;
-            SquareSdk.Models.Order squareOrder = null;
-
-            if (!string.IsNullOrWhiteSpace(transactionId))
+            if(!isValidRequest)
             {
-                var result = orderApi.BatchRetrieveOrders(
-                    new BatchRetrieveOrdersRequest(new List<string>() { transactionId }));
-
-                squareOrder = result.Orders.FirstOrDefault();
-            }
-
-            if (squareOrder != null)
-            {
-                var orderStatus = squareOrder.State ?? "";
-
-                switch (orderStatus.ToUpper())
+                try
                 {
-                    case "COMPLETED":
-                    case "AUTHORIZED":
-                        paymentStatus = PaymentStatus.Authorized;
-                        break;
-                    case "CANCELED":
-                        paymentStatus = PaymentStatus.Cancelled;
-                        break;
+                    var client = new SquareSdk.SquareClient.Builder()
+                    .Environment(environment)
+                    .AccessToken(accessToken)
+                    .Build();
+
+                    var orderApi = client.OrdersApi;
+
+                    var orderId = GetOrderIdFromRequest(request);
+
+                    var paymentStatus = PaymentStatus.PendingExternalSystem;
+                    SquareSdk.Models.Order squareOrder = null;
+
+                    if (!string.IsNullOrWhiteSpace(orderId))
+                    {
+                        var result = orderApi.BatchRetrieveOrders(
+                            new BatchRetrieveOrdersRequest(new List<string>() { orderId }));
+
+                        squareOrder = result.Orders.FirstOrDefault();
+                    }
+
+                    if (squareOrder != null)
+                    {
+                        var orderStatus = squareOrder.State ?? "";
+
+                        switch (orderStatus.ToUpper())
+                        {
+                            case "COMPLETED":
+                            case "AUTHORIZED":
+                                paymentStatus = PaymentStatus.Authorized;
+                                break;
+                            case "CANCELED":
+                                paymentStatus = PaymentStatus.Cancelled;
+                                break;
+                        }
+                    }
+
+                    return new CallbackResult
+                    {
+                        TransactionInfo = new TransactionInfo
+                        {
+                            AmountAuthorized = order.TotalPrice.Value.WithTax,
+                            TransactionFee = 0m,
+                            TransactionId = Guid.NewGuid().ToString("N"),
+                            PaymentStatus = paymentStatus
+                        }
+                    };
+                }
+                catch (Exception ex)
+                {
+                    Vendr.Log.Error<SquareCheckoutOnetimePaymentProvider>(ex, "Square - ProcessCallback");
                 }
             }
 
-            return new CallbackResult
-            {
-                TransactionInfo = new TransactionInfo
-                {
-                    AmountAuthorized = order.TotalPrice.Value.WithTax,
-                    TransactionFee = 0m,
-                    TransactionId = Guid.NewGuid().ToString("N"),
-                    PaymentStatus = paymentStatus
-                }
-            };
+            return CallbackResult.BadRequest();
         }
     }
 }
