@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Web;
 using System.Web.Mvc;
 using Vendr.Core;
@@ -12,6 +14,7 @@ using Vendr.Core.Web;
 using Vendr.Core.Web.Api;
 using Vendr.Core.Web.PaymentProviders;
 using SquareSdk = Square;
+using Vendr.Core.Helpers;
 
 namespace Vendr.Contrib.PaymentProviders.Square
 {
@@ -74,11 +77,45 @@ namespace Vendr.Contrib.PaymentProviders.Square
 
         private static bool ValidateSquareSignature(HttpRequestBase request, SquareSettings settings)
         {
-            var signingSecret = settings.SandboxMode ? settings.SandboxWebhookSigningSecret: settings.LiveWebhookSigningSecret;
 
-            var requestSquareSignatureSecret = request.Headers["x-square-signature"];
+            var body = GetRequestBody(request);
+            var url = request.Url.ToString();
 
-            return !string.IsNullOrWhiteSpace(requestSquareSignatureSecret) && requestSquareSignatureSecret == signingSecret;
+            var signatureKey = settings.SandboxMode ? settings.SandboxWebhookSigningSecret: settings.LiveWebhookSigningSecret;
+            var signature = request.Headers["x-square-signature"];
+
+            var combined = url + body;
+
+            var hmac = HMACSHA1(signatureKey, combined);
+            var checkHash = Base64Encode(hmac);
+
+            return !string.IsNullOrWhiteSpace(signature) && signature == checkHash;
+        }
+        
+        private static string GenerateHashString(HashAlgorithm algorithm, string input)
+        {
+            var bytes = algorithm.ComputeHash(Encoding.UTF8.GetBytes(input));
+            return string.Join(string.Empty, bytes.Select(x => x.ToString("x2")));
+        }
+
+        protected static string HMACSHA1(string key, string input)
+        {
+            var result = default(string);
+            byte[] keyBytes = Encoding.UTF8.GetBytes(key);
+            using (var algorithm = new HMACSHA1(keyBytes))
+            {
+                result = GenerateHashString(algorithm, input);
+            }
+            return result;
+        }
+
+        private static string GetRequestBody(HttpRequestBase request)
+        {
+            using (var reader = new StreamReader(request.InputStream))
+            {
+                var body = reader.ReadToEnd();
+                return body;
+            }
         }
 
         private static string GetOrderIdFromRequest(HttpRequestBase request)
