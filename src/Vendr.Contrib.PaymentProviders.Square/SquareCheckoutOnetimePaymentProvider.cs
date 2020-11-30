@@ -95,7 +95,7 @@ namespace Vendr.Contrib.PaymentProviders.Square
         private static string GenerateHashString(HashAlgorithm algorithm, string input)
         {
             var bytes = algorithm.ComputeHash(Encoding.UTF8.GetBytes(input));
-            return string.Join(string.Empty, bytes.Select(x => x.ToString("x2")));
+            return string.Join(string.Empty, bytes.Select(x => x.ToString("X2")));
         }
 
         protected static string HMACSHA1(string key, string input)
