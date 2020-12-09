@@ -13,11 +13,11 @@ namespace Vendr.Contrib.PaymentProviders.Square
         [PaymentProviderSetting(Name = "Sandbox Access Token", Description = "Enter the access token for the Sandbox environment")]
         public string SandboxAccessToken { get; set; }
 
-        [PaymentProviderSetting(Name = "Live Access Token", Description = "Enter the access token for the Live environment")]
-        public string LiveAccessToken { get; set; }
-
         [PaymentProviderSetting(Name = "Sandbox Webhook Signing Secret", Description = "Enter the webhook signing secret for the Sandbox environment")]
         public string SandboxWebhookSigningSecret { get; set; }
+
+        [PaymentProviderSetting(Name = "Live Access Token", Description = "Enter the access token for the Live environment")]
+        public string LiveAccessToken { get; set; }
 
         [PaymentProviderSetting(Name = "Live Webhook Signing Secret", Description = "Enter the webhook signing secret for the Live environment")]
         public string LiveWebhookSigningSecret { get; set; }

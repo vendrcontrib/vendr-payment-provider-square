@@ -197,13 +197,15 @@ namespace Vendr.Contrib.PaymentProviders.Square
                         }
                     }
 
-                    return CallbackResult.Ok(new TransactionInfo
+                    var callbackResult = CallbackResult.Ok(new TransactionInfo
                     {
                         AmountAuthorized = order.TotalPrice.Value.WithTax,
                         TransactionFee = 0m,
                         TransactionId = squareOrder.Id,
                         PaymentStatus = paymentStatus
                     });
+
+                    return callbackResult;
                 }
                 catch (Exception ex)
                 {
