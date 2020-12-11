@@ -4,18 +4,19 @@
         <id>Vendr.Contrib.PaymentProviders.Square</id>
         <version>0.0.0</version>
         <title>Vendr.Contrib.PaymentProviders.Square</title>
-        <authors>Outfield Digital Ltd</authors>
-        <owners>Outfield Digital Ltd</owners>
-        <copyright>Outfield Digital Ltd</copyright>
+        <authors>Vendr Contrib</authors>
+        <owners>Vendr Contrib</owners>
+        <copyright>Vendr Contrib</copyright>
         <icon>images\icon.png</icon>
         <license type="expression">MIT</license>
-        <projectUrl>https://getvendr.net/</projectUrl>
+        <projectUrl>https://vendr.net/</projectUrl>
         <description>Square payment provider for Vendr, the eCommerce package for Umbrao v8+</description>
         <summary>Square payment provider for Vendr, the eCommerce package for Umbrao v8+</summary>
         <language>en-US</language>
         <tags>umbraco ecommerce vendr</tags>
         <dependencies>
             <group targetFramework="net472">
+                <dependency id="Square" version="[6.3.0,6.999999)" />
                 <dependency id="Vendr.Core.Web" version="[1.0.0,1.999999)" />
                 <!--<dependency id="UmbracoCms.Core" version="[$MinUmbracoVersion$]" />-->
             </group>

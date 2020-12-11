@@ -7,6 +7,7 @@
             <version>0.0.0</version>
             <license url="https://opensource.org/licenses/MIT">MIT</license>
             <url></url>
+            <iconUrl>https://raw.githubusercontent.com/vendrhub/vendr/main/assets/logo-purple-520.png</iconUrl>
             <requirements>
                 <major>8</major>
                 <minor>2</minor>
@@ -14,9 +15,13 @@
             </requirements>
         </package>
         <author>
-            <name></name>
-            <website></website>
+            <name>Vendr Contrib</name>
+            <website>https://vendr.net/docs/</website>
         </author>
+        <contributors>
+            <contributor>Paul Seal</contributor>
+            <contributor>Matt Brailsford</contributor>
+        </contributors>
         <readme>Square payment provider for Vendr, the eCommerce package for Umbrao v8+</readme>
     </info>
     
