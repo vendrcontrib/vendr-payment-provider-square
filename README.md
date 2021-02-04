@@ -1,2 +1,3 @@
-# vendr-payment-provider-square
-Square Payment Provider for Vendr, the eCommerce solution for Umbraco v8+
+# Vendr Square Payment Provider
+
+Square Payment Provider for Vendr, the eCommerce package for Umbrao v8+

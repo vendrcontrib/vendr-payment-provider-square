@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<umbPackage>
+    
+    <info>
+        <package>
+            <name>Vendr.Contrib.PaymentProviders.Square</name>
+            <version>0.0.0</version>
+            <license url="https://opensource.org/licenses/MIT">MIT</license>
+            <url></url>
+            <iconUrl>https://raw.githubusercontent.com/vendrhub/vendr/main/assets/logo-purple-520.png</iconUrl>
+            <requirements>
+                <major>8</major>
+                <minor>2</minor>
+                <patch>0</patch>
+            </requirements>
+        </package>
+        <author>
+            <name>Vendr Contrib</name>
+            <website>https://vendr.net/docs/</website>
+        </author>
+        <contributors>
+            <contributor>Paul Seal</contributor>
+            <contributor>Matt Brailsford</contributor>
+        </contributors>
+        <readme>Square payment provider for Vendr, the eCommerce package for Umbrao v8+</readme>
+    </info>
+    
+    <DocumentTypes></DocumentTypes>
+    <Squares></Squares>
+    <Stylesheets></Stylesheets>
+    <Macros></Macros>
+    <DictionaryItems></DictionaryItems>
+    <Languages></Languages>
+    <DataTypes></DataTypes>
+    <Actions></Actions>
+    <control></control>
+
+    <files></files>
+    
+</umbPackage>
