@@ -92,15 +92,14 @@ namespace Vendr.Contrib.PaymentProviders.Square
                 .Name("Vendr")
                 .Build();
 
-            var totalPrice = Convert.ToInt64(order.TotalPrice.Value.WithoutTax * 100);
-            var totalTax = Convert.ToInt64(order.TotalPrice.Value.Tax * 100);
+            var orderAmount = AmountToMinorUnits(order.TotalPrice.Value.WithoutTax);
 
             var bodyOrderOrderLineItems = new List<OrderLineItem>()
             {
                 new OrderLineItem("1",
                     order.Id.ToString(),
                     order.OrderNumber,
-                    basePriceMoney: new Money(totalPrice, currencyCode))
+                    basePriceMoney: new Money(orderAmount, currencyCode))
             };
 
             var orderReference = order.GenerateOrderReference();
