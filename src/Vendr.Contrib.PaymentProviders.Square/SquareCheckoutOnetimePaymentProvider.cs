@@ -98,7 +98,7 @@ namespace Vendr.Contrib.PaymentProviders.Square
                 .Name("Vendr")
                 .Build();
 
-            var orderAmount = AmountToMinorUnits(order.TotalPrice.Value.WithoutTax);
+            var orderAmount = AmountToMinorUnits(order.TransactionAmount.Value);
 
             var bodyOrderOrderLineItems = new List<OrderLineItem>()
             {
