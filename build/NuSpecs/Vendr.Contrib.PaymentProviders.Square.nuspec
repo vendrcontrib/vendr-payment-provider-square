@@ -13,7 +13,7 @@
         <description>Square payment provider for Vendr, the eCommerce package for Umbrao v8+</description>
         <summary>Square payment provider for Vendr, the eCommerce package for Umbrao v8+</summary>
         <language>en-US</language>
-        <tags>umbraco ecommerce vendr</tags>
+        <tags>umbraco ecommerce vendr square</tags>
         <dependencies>
             <group targetFramework="net472">
                 <dependency id="Square" version="[6.3.0,6.999999)" />
