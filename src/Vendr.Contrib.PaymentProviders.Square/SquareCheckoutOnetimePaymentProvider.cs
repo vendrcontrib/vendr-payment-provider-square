@@ -204,7 +204,7 @@ namespace Vendr.Contrib.PaymentProviders.Square
 
                     var callbackResult = CallbackResult.Ok(new TransactionInfo
                     {
-                        AmountAuthorized = order.TotalPrice.Value.WithTax,
+                        AmountAuthorized = order.TransactionAmount.Value.WithTax,
                         TransactionFee = 0m,
                         TransactionId = squareOrder.Id,
                         PaymentStatus = paymentStatus
