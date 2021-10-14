@@ -78,6 +78,12 @@ namespace Vendr.Contrib.PaymentProviders.Square
             var currency = Vendr.Services.CurrencyService.GetCurrency(order.CurrencyId);
             var currencyCode = currency.Code.ToUpperInvariant();
 
+            // Ensure currency has valid ISO 4217 code
+            if (!Iso4217.CurrencyCodes.ContainsKey(currencyCode))
+            {
+                throw new Exception("Currency must be a valid ISO 4217 currency code: " + currency.Name);
+            }
+
             var accessToken = settings.SandboxMode ? settings.SandboxAccessToken : settings.LiveAccessToken;
             var environment = settings.SandboxMode ? SquareSdk.Environment.Sandbox : SquareSdk.Environment.Production;
 
@@ -92,15 +98,14 @@ namespace Vendr.Contrib.PaymentProviders.Square
                 .Name("Vendr")
                 .Build();
 
-            var totalPrice = Convert.ToInt64(order.TotalPrice.Value.WithoutTax * 100);
-            var totalTax = Convert.ToInt64(order.TotalPrice.Value.Tax * 100);
+            var orderAmount = AmountToMinorUnits(order.TransactionAmount.Value);
 
             var bodyOrderOrderLineItems = new List<OrderLineItem>()
             {
                 new OrderLineItem("1",
                     order.Id.ToString(),
                     order.OrderNumber,
-                    basePriceMoney: new Money(totalPrice, currencyCode))
+                    basePriceMoney: new Money(orderAmount, currencyCode))
             };
 
             var orderReference = order.GenerateOrderReference();
@@ -199,7 +204,7 @@ namespace Vendr.Contrib.PaymentProviders.Square
 
                     var callbackResult = CallbackResult.Ok(new TransactionInfo
                     {
-                        AmountAuthorized = order.TotalPrice.Value.WithTax,
+                        AmountAuthorized = order.TransactionAmount.Value.WithTax,
                         TransactionFee = 0m,
                         TransactionId = squareOrder.Id,
                         PaymentStatus = paymentStatus
