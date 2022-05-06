@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29503.13
@@ -25,12 +25,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Umbraco", "Umbraco", "{BD55
 		build\Umbraco\Square.package.xml = build\Umbraco\Square.package.xml
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "build\_build.csproj", "{E8506671-7D06-4BC8-86CB-9EB02ECBFE8E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E8506671-7D06-4BC8-86CB-9EB02ECBFE8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8506671-7D06-4BC8-86CB-9EB02ECBFE8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{54D75F3D-BD42-45E8-BC99-210A9AD71CEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{54D75F3D-BD42-45E8-BC99-210A9AD71CEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{54D75F3D-BD42-45E8-BC99-210A9AD71CEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
