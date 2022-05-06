@@ -1,29 +1,11 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29503.13
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32126.317
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{A2F6C69B-7FBB-4520-B282-1B47A0854A03}"
-	ProjectSection(SolutionItems) = preProject
-		Build.cmd = Build.cmd
-		build\Build.Compile.targets = build\Build.Compile.targets
-		build\Build.Package.Nuget.targets = build\Build.Package.Nuget.targets
-		build\Build.Package.Umbraco.targets = build\Build.Package.Umbraco.targets
-		build\Build.Prepare.targets = build\Build.Prepare.targets
-		build\Build.proj = build\Build.proj
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuSpecs", "NuSpecs", "{81061D69-BD7A-443B-B18D-9BF1F4840A31}"
-	ProjectSection(SolutionItems) = preProject
-		build\NuSpecs\Vendr.Contrib.PaymentProviders.Square.nuspec = build\NuSpecs\Vendr.Contrib.PaymentProviders.Square.nuspec
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vendr.Contrib.PaymentProviders.Square", "src\Vendr.Contrib.PaymentProviders.Square\Vendr.Contrib.PaymentProviders.Square.csproj", "{54D75F3D-BD42-45E8-BC99-210A9AD71CEB}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Umbraco", "Umbraco", "{BD551EF3-D31E-4E57-B15D-0E03290C87B8}"
-	ProjectSection(SolutionItems) = preProject
-		build\Umbraco\Square.package.xml = build\Umbraco\Square.package.xml
-	EndProjectSection
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "build\_build.csproj", "{E8506671-7D06-4BC8-86CB-9EB02ECBFE8E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,13 +17,11 @@ Global
 		{54D75F3D-BD42-45E8-BC99-210A9AD71CEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{54D75F3D-BD42-45E8-BC99-210A9AD71CEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{54D75F3D-BD42-45E8-BC99-210A9AD71CEB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E8506671-7D06-4BC8-86CB-9EB02ECBFE8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8506671-7D06-4BC8-86CB-9EB02ECBFE8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{81061D69-BD7A-443B-B18D-9BF1F4840A31} = {A2F6C69B-7FBB-4520-B282-1B47A0854A03}
-		{BD551EF3-D31E-4E57-B15D-0E03290C87B8} = {A2F6C69B-7FBB-4520-B282-1B47A0854A03}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B3A08DA4-571B-4CE5-A04A-7F7E8EC953F1}
