@@ -15,8 +15,8 @@
             </requirements>
         </package>
         <author>
-            <name>Vendr Contrib</name>
-            <website>https://vendr.net/docs/</website>
+            <name>Vendr Community</name>
+            <website>https://our.umbraco.com</website>
         </author>
         <contributors>
             <contributor>Paul Seal</contributor>
@@ -35,6 +35,8 @@
     <Actions></Actions>
     <control></control>
 
-    <files></files>
+    <files>
+        <file path="$ArtifactsDirectory$/files/bin/Vendr.Contrib.PaymentProviders.Square.merged.dll" orgPath="bin/Vendr.Contrib.PaymentProviders.Square.dll" />
+    </files>
     
 </umbPackage>

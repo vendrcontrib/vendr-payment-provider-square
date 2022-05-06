@@ -2,18 +2,16 @@ using Newtonsoft.Json;
 using Square.Models;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Web;
-using System.Web.Mvc;
+using System.Threading.Tasks;
+using Vendr.Common.Logging;
 using Vendr.Contrib.PaymentProviders.Square.Models;
-using Vendr.Core;
+using Vendr.Core.Api;
 using Vendr.Core.Models;
-using Vendr.Core.Web;
-using Vendr.Core.Web.Api;
-using Vendr.Core.Web.PaymentProviders;
+using Vendr.Core.PaymentProviders;
+using Vendr.Extensions;
 using SquareSdk = Square;
 
 namespace Vendr.Contrib.PaymentProviders.Square
@@ -21,14 +19,38 @@ namespace Vendr.Contrib.PaymentProviders.Square
     [PaymentProvider("square-checkout-onetime", "Square Checkout (One Time)", "Square payment provider for one time payments", Icon = "icon-invoice")]
     public class SquareCheckoutOnetimePaymentProvider : PaymentProviderBase<SquareSettings>
     {
-        public SquareCheckoutOnetimePaymentProvider(VendrContext vendr)
-            : base(vendr)
-        { }
+        protected readonly ILogger<SquareCheckoutOnetimePaymentProvider> _logger;
 
-        public override OrderReference GetOrderReference(HttpRequestBase request, SquareSettings settings)
+        public override bool FinalizeAtContinueUrl => false;
+
+        public SquareCheckoutOnetimePaymentProvider(VendrContext vendr, ILogger<SquareCheckoutOnetimePaymentProvider> logger)
+            : base(vendr)
         {
-            var accessToken = settings.SandboxMode ? settings.SandboxAccessToken : settings.LiveAccessToken;
-            var environment = settings.SandboxMode ? SquareSdk.Environment.Sandbox : SquareSdk.Environment.Production;
+            _logger = logger;
+        }
+
+        public override string GetContinueUrl(PaymentProviderContext<SquareSettings> context)
+        {
+            context.Settings.MustNotBeNull("settings");
+            context.Settings.ContinueUrl.MustNotBeNull("settings.ContinueUrl");
+
+            return context.Settings.ContinueUrl;
+        }
+
+        public override string GetCancelUrl(PaymentProviderContext<SquareSettings> context)
+        {
+            return string.Empty;
+        }
+
+        public override string GetErrorUrl(PaymentProviderContext<SquareSettings> context)
+        {
+            return string.Empty;
+        }
+
+        public override async Task<OrderReference> GetOrderReferenceAsync(PaymentProviderContext<SquareSettings> context)
+        {
+            var accessToken = context.Settings.SandboxMode ? context.Settings.SandboxAccessToken : context.Settings.LiveAccessToken;
+            var environment = context.Settings.SandboxMode ? SquareSdk.Environment.Sandbox : SquareSdk.Environment.Production;
 
             var client = new SquareSdk.SquareClient.Builder()
                 .Environment(environment)
@@ -36,46 +58,41 @@ namespace Vendr.Contrib.PaymentProviders.Square
                 .Build();
 
             var orderApi = client.OrdersApi;
-            SquareSdk.Models.Order squareOrder = null;
+            var squareEvent = await GetSquareWebhookEvent(context);
 
-            var squareEvent = GetSquareWebhookEvent(request, settings);
-
-            if(squareEvent != null && squareEvent.IsValid)
+            if (squareEvent != null && squareEvent.IsValid)
             {
                 try
                 {
-                    var referenceId = "";
-
                     var orderId = GetOrderId(squareEvent);
                     if (!string.IsNullOrWhiteSpace(orderId))
                     {
-                        var result = orderApi.BatchRetrieveOrders(
+                        var result = await orderApi.BatchRetrieveOrdersAsync(
                             new BatchRetrieveOrdersRequest(new List<string>() { orderId }));
 
-                        squareOrder = result.Orders.FirstOrDefault();
-                        referenceId = squareOrder.ReferenceId;
+                        var squareOrder = result.Orders.FirstOrDefault();
+                        var referenceId = squareOrder.ReferenceId;
 
                         if (!string.IsNullOrWhiteSpace(referenceId) && Guid.TryParse(referenceId, out var vendrOrderId))
                         {
-                            OrderReadOnly vendrOrder = Vendr.Services.OrderService.GetOrder(vendrOrderId);
+                            var vendrOrder = Vendr.Services.OrderService.GetOrder(vendrOrderId);
+
                             return vendrOrder.GenerateOrderReference();
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Vendr.Log.Error<SquareCheckoutOnetimePaymentProvider>(ex, "Square - GetOrderReference");
+                    _logger.Error(ex, "Square - GetOrderReference");
                 }
             }
 
-            return base.GetOrderReference(request, settings);
+            return await base.GetOrderReferenceAsync(context);
         }
 
-        public override bool FinalizeAtContinueUrl => false;
-
-        public override PaymentFormResult GenerateForm(OrderReadOnly order, string continueUrl, string cancelUrl, string callbackUrl, SquareSettings settings)
+        public override async Task<PaymentFormResult> GenerateFormAsync(PaymentProviderContext<SquareSettings> context)
         {
-            var currency = Vendr.Services.CurrencyService.GetCurrency(order.CurrencyId);
+            var currency = Vendr.Services.CurrencyService.GetCurrency(context.Order.CurrencyId);
             var currencyCode = currency.Code.ToUpperInvariant();
 
             // Ensure currency has valid ISO 4217 code
@@ -84,8 +101,8 @@ namespace Vendr.Contrib.PaymentProviders.Square
                 throw new Exception("Currency must be a valid ISO 4217 currency code: " + currency.Name);
             }
 
-            var accessToken = settings.SandboxMode ? settings.SandboxAccessToken : settings.LiveAccessToken;
-            var environment = settings.SandboxMode ? SquareSdk.Environment.Sandbox : SquareSdk.Environment.Production;
+            var accessToken = context.Settings.SandboxMode ? context.Settings.SandboxAccessToken : context.Settings.LiveAccessToken;
+            var environment = context.Settings.SandboxMode ? SquareSdk.Environment.Sandbox : SquareSdk.Environment.Production;
 
             var client = new SquareSdk.SquareClient.Builder()
                 .Environment(environment)
@@ -98,89 +115,71 @@ namespace Vendr.Contrib.PaymentProviders.Square
                 .Name("Vendr")
                 .Build();
 
-            var orderAmount = AmountToMinorUnits(order.TransactionAmount.Value);
+            var orderAmount = AmountToMinorUnits(context.Order.TransactionAmount.Value);
 
             var bodyOrderOrderLineItems = new List<OrderLineItem>()
             {
                 new OrderLineItem("1",
-                    order.Id.ToString(),
-                    order.OrderNumber,
+                    context.Order.Id.ToString(),
+                    context.Order.OrderNumber,
                     basePriceMoney: new Money(orderAmount, currencyCode))
             };
 
-            var orderReference = order.GenerateOrderReference();
-            var shortOrderReference = $"{order.Id},{order.OrderNumber}";
+            var orderReference = context.Order.GenerateOrderReference();
+            var shortOrderReference = $"{context.Order.Id},{context.Order.OrderNumber}";
 
-            var bodyOrderOrder = new SquareSdk.Models.Order.Builder(settings.LocationId)
-                .CustomerId(order.CustomerInfo.CustomerReference)
-                .ReferenceId(order.Id.ToString())
+            var bodyOrderOrder = new SquareSdk.Models.Order.Builder(context.Settings.LocationId)
+                .CustomerId(context.Order.CustomerInfo.CustomerReference)
+                .ReferenceId(context.Order.Id.ToString())
                 .Source(bodyOrderOrderSource)
                 .LineItems(bodyOrderOrderLineItems)
                 .Build();
 
             var bodyOrder = new CreateOrderRequest.Builder()
                 .Order(bodyOrderOrder)
-                .LocationId(settings.LocationId)
                 .IdempotencyKey(Guid.NewGuid().ToString())
                 .Build();
 
             var body = new CreateCheckoutRequest.Builder(
                 Guid.NewGuid().ToString(), bodyOrder)
-                .RedirectUrl(continueUrl)
+                .RedirectUrl(context.Urls.ContinueUrl)
                 .Build();
 
-            var result = checkoutApi.CreateCheckout(settings.LocationId, body);
+            var result = await checkoutApi.CreateCheckoutAsync(context.Settings.LocationId, body);
 
             return new PaymentFormResult()
             {
-                Form = new PaymentForm(result.Checkout.CheckoutPageUrl, FormMethod.Get)
+                Form = new PaymentForm(result.Checkout.CheckoutPageUrl, PaymentFormMethod.Get)
             };
         }
 
-        public override string GetCancelUrl(OrderReadOnly order, SquareSettings settings)
+        public override async Task<CallbackResult> ProcessCallbackAsync(PaymentProviderContext<SquareSettings> context)
         {
-            return string.Empty;
-        }
+            var accessToken = context.Settings.SandboxMode ? context.Settings.SandboxAccessToken : context.Settings.LiveAccessToken;
+            var environment = context.Settings.SandboxMode ? SquareSdk.Environment.Sandbox : SquareSdk.Environment.Production;
 
-        public override string GetErrorUrl(OrderReadOnly order, SquareSettings settings)
-        {
-            return string.Empty;
-        }
-
-        public override string GetContinueUrl(OrderReadOnly order, SquareSettings settings)
-        {
-            settings.MustNotBeNull("settings");
-            settings.ContinueUrl.MustNotBeNull("settings.ContinueUrl");
-
-            return settings.ContinueUrl;
-        }
-
-        public override CallbackResult ProcessCallback(OrderReadOnly order, HttpRequestBase request, SquareSettings settings)
-        {
-            var accessToken = settings.SandboxMode ? settings.SandboxAccessToken : settings.LiveAccessToken;
-            var environment = settings.SandboxMode ? SquareSdk.Environment.Sandbox : SquareSdk.Environment.Production;
-
-            var squareEvent = GetSquareWebhookEvent(request, settings);
+            var squareEvent = await GetSquareWebhookEvent(context);
 
             if(squareEvent != null && squareEvent.IsValid)
             {
                 try
                 {
                     var client = new SquareSdk.SquareClient.Builder()
-                    .Environment(environment)
-                    .AccessToken(accessToken)
-                    .Build();
+                        .Environment(environment)
+                        .AccessToken(accessToken)
+                        .Build();
 
                     var orderApi = client.OrdersApi;
 
                     var orderId = GetOrderId(squareEvent);
 
                     var paymentStatus = PaymentStatus.PendingExternalSystem;
+                    
                     SquareSdk.Models.Order squareOrder = null;
 
                     if (!string.IsNullOrWhiteSpace(orderId))
                     {
-                        var result = orderApi.BatchRetrieveOrders(
+                        var result = await orderApi.BatchRetrieveOrdersAsync(
                             new BatchRetrieveOrdersRequest(new List<string>() { orderId }));
 
                         squareOrder = result.Orders.FirstOrDefault();
@@ -204,7 +203,7 @@ namespace Vendr.Contrib.PaymentProviders.Square
 
                     var callbackResult = CallbackResult.Ok(new TransactionInfo
                     {
-                        AmountAuthorized = order.TransactionAmount.Value.WithTax,
+                        AmountAuthorized = context.Order.TransactionAmount.Value,
                         TransactionFee = 0m,
                         TransactionId = squareOrder.Id,
                         PaymentStatus = paymentStatus
@@ -214,45 +213,39 @@ namespace Vendr.Contrib.PaymentProviders.Square
                 }
                 catch (Exception ex)
                 {
-                    Vendr.Log.Error<SquareCheckoutOnetimePaymentProvider>(ex, "Square - ProcessCallback");
+                    _logger.Error(ex, "Square - ProcessCallback");
                 }
             }
 
             return CallbackResult.BadRequest();
         }
 
-        protected SquareWebhookEvent GetSquareWebhookEvent(HttpRequestBase request, SquareSettings settings)
+        protected async Task<SquareWebhookEvent> GetSquareWebhookEvent(PaymentProviderContext<SquareSettings> context)
         {
             const string EventKey = "Vendr_SquareEvent";
+
             SquareWebhookEvent squareEvent = null;
 
-            if(HttpContext.Current.Items[EventKey] != null)
+            if(context.AdditionalData.ContainsKey(EventKey))
             {
-                squareEvent = (SquareWebhookEvent)HttpContext.Current.Items[EventKey];
+                squareEvent = (SquareWebhookEvent)context.AdditionalData[EventKey];
             }
             else
             {
                 try
                 {
-                    if (request.InputStream.CanSeek)
-                        request.InputStream.Seek(0, SeekOrigin.Begin);
+                    var json = await context.Request.Content.ReadAsStringAsync();
+                    var url = context.Request.RequestUri.ToString();
+                    var signature = context.Request.Headers.GetValues("x-square-signature").FirstOrDefault();;
 
-                    using (var reader = new StreamReader(request.InputStream))
-                    {
-                        var json = reader.ReadToEnd();
+                    squareEvent = JsonConvert.DeserializeObject<SquareWebhookEvent>(json);
+                    squareEvent.IsValid = ValidateSquareSignature(json, url, signature, context.Settings);
 
-                        var url = request.Url.ToString();
-                        var signature = request.Headers["x-square-signature"];
-
-                        squareEvent = JsonConvert.DeserializeObject<SquareWebhookEvent>(json);
-                        squareEvent.IsValid = ValidateSquareSignature(json, url, signature, settings);
-
-                        HttpContext.Current.Items[EventKey] = squareEvent;
-                    }
+                    context.AdditionalData.Add(EventKey, squareEvent);
                 }
                 catch (Exception ex)
                 {
-                    Vendr.Log.Error<SquareCheckoutOnetimePaymentProvider>(ex, "Square - GetSquareWebhookEvent");
+                    _logger.Error(ex, "Square - GetSquareWebhookEvent");
                 }
             }
 
