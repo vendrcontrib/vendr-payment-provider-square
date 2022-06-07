@@ -236,7 +236,7 @@ namespace Vendr.Contrib.PaymentProviders.Square
                 {
                     var json = await context.Request.Content.ReadAsStringAsync();
                     var url = context.Request.RequestUri.ToString();
-                    var signature = context.Request.Headers.GetValues("x-square-signature").FirstOrDefault();;
+                    var signature = context.Request.Headers.GetValues("x-square-signature").FirstOrDefault();
 
                     squareEvent = JsonConvert.DeserializeObject<SquareWebhookEvent>(json);
                     squareEvent.IsValid = ValidateSquareSignature(json, url, signature, context.Settings);
