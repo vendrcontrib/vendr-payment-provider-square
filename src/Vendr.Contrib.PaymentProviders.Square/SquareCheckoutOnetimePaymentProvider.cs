@@ -199,17 +199,15 @@ namespace Vendr.Contrib.PaymentProviders.Square
                                 paymentStatus = PaymentStatus.Cancelled;
                                 break;
                         }
+                        
+                        return CallbackResult.Ok(new TransactionInfo
+                        {
+                            AmountAuthorized = context.Order.TransactionAmount.Value,
+                            TransactionFee = 0m,
+                            TransactionId = squareOrder.Id,
+                            PaymentStatus = paymentStatus
+                        });
                     }
-
-                    var callbackResult = CallbackResult.Ok(new TransactionInfo
-                    {
-                        AmountAuthorized = context.Order.TransactionAmount.Value,
-                        TransactionFee = 0m,
-                        TransactionId = squareOrder.Id,
-                        PaymentStatus = paymentStatus
-                    });
-
-                    return callbackResult;
                 }
                 catch (Exception ex)
                 {
