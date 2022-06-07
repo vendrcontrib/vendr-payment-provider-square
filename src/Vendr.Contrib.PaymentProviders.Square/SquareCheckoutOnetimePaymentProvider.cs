@@ -199,17 +199,15 @@ namespace Vendr.Contrib.PaymentProviders.Square
                                 paymentStatus = PaymentStatus.Cancelled;
                                 break;
                         }
+                        
+                        return CallbackResult.Ok(new TransactionInfo
+                        {
+                            AmountAuthorized = context.Order.TransactionAmount.Value,
+                            TransactionFee = 0m,
+                            TransactionId = squareOrder.Id,
+                            PaymentStatus = paymentStatus
+                        });
                     }
-
-                    var callbackResult = CallbackResult.Ok(new TransactionInfo
-                    {
-                        AmountAuthorized = context.Order.TransactionAmount.Value,
-                        TransactionFee = 0m,
-                        TransactionId = squareOrder.Id,
-                        PaymentStatus = paymentStatus
-                    });
-
-                    return callbackResult;
                 }
                 catch (Exception ex)
                 {
@@ -236,7 +234,7 @@ namespace Vendr.Contrib.PaymentProviders.Square
                 {
                     var json = await context.Request.Content.ReadAsStringAsync();
                     var url = context.Request.RequestUri.ToString();
-                    var signature = context.Request.Headers.GetValues("x-square-signature").FirstOrDefault();;
+                    var signature = context.Request.Headers.GetValues("x-square-signature").FirstOrDefault();
 
                     squareEvent = JsonConvert.DeserializeObject<SquareWebhookEvent>(json);
                     squareEvent.IsValid = ValidateSquareSignature(json, url, signature, context.Settings);
